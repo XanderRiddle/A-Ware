@@ -8,7 +8,7 @@ GPIO_OFFSET = 0  # CHANGE THIS to your actual GPIO offset
 CONSUMER = "pwm-test"
 
 chip = gpiod.Chip("/dev/gpiochip0")
-line = chip.request_lines(0)
+line = chip.request_lines()
 line.set_value(Value.ACTIVE)
 
 try:
