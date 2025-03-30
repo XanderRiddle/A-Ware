@@ -2,24 +2,24 @@
 import gpiod
 import time
 
-# Use GPIO0_C4 (Pin 31)
-GPIO_CHIP = '/dev/gpiochip0'  
-GPIO_PIN = 31  # GPIO0_C4
-CONSUMER = 'pwm-demo'
+# Using gpiochip0, offset 0 as example (change to your working GPIO)
+CHIP = '/dev/gpiochip0'
+OFFSET = 0  # Change this to your working GPIO offset
 
 try:
-    chip = gpiod.Chip(GPIO_CHIP)
-    line = chip.get_line(GPIO_PIN)
-    line.request(consumer=CONSUMER, type=gpiod.LINE_REQ_DIR_OUT)
+    chip = gpiod.Chip(CHIP)
+    line = chip.get_line(OFFSET)
+    line.request(consumer="5v-test", type=gpiod.LINE_REQ_DIR_OUT)
     
-    print(f"Outputting 100% PWM on GPIO0_C4 (Pin 31)")
-    line.set_value(1)  # Constant high = 100% PWM
+    print(f"Setting GPIO {OFFSET} to HIGH (3.3V)")
+    line.set_value(1)
+    print("Voltage should now be active. Press Ctrl+C to stop.")
     
     while True:
         time.sleep(1)
         
 except KeyboardInterrupt:
-    print("\nStopping PWM")
+    print("\nShutting down")
 finally:
     line.set_value(0)
     line.release()
