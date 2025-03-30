@@ -1,4 +1,5 @@
 import depthai as dai
+import RPi.GPIO as GPIO
 import time
 import numpy as np
 
@@ -50,6 +51,33 @@ camRgb.preview.link(detectionNetwork.input)
 detectionNetwork.out.link(xoutNN.input)
 stereo.depth.link(xoutDepth.input)
 
+# Raspberry Pi Setup
+
+pins = {
+    'left': 32,        # GPIO12
+    'middle': 33, # GPIO13
+    'right': 35        # GPIO19
+}
+
+GPIO.setmode(GPIO.BOARD)
+for pin in pins.values():
+    GPIO.setup(pin, GPIO.OUT)
+
+pwm = {key: GPIO.PWM(pin, 1000) for key, pin in pins.items()}
+for p in pwm.values():
+    p.start(0)
+
+def set_pwm_duty_cycle(quadrant, distance_mm):
+    """
+    Sets the PWM duty cycle for the specified quadrant based on distance.
+    Distance is expected to be between 500 mm and 10,000 mm.
+    """
+    if distance_mm < 500 or distance_mm > 10000:
+        duty_cycle = 0
+    else:
+        duty_cycle = ((10000 - distance_mm) / 9500) * 100
+    pwm[quadrant].ChangeDutyCycle(duty_cycle)
+
 # Connect to device and start pipeline
 with dai.Device(pipeline) as device:
     detectionsQueue = device.getOutputQueue(name="detections", maxSize=4, blocking=False)
@@ -60,11 +88,14 @@ with dai.Device(pipeline) as device:
         depthFrame = depthQueue.get().getFrame()
         depthFrame = np.array(depthFrame, dtype=np.uint16)  # Convert depth frame to NumPy array
 
+        depthHeight = depthFrame.shape[0]
+        depthWidth = depthFrame.shape[1]
+
         object_list = []
         if detections:
             for detection in detections:
-                x1, y1, x2, y2 = int(detection.xmin * 300), int(detection.ymin * 300), \
-                                 int(detection.xmax * 300), int(detection.ymax * 300)
+                x1, y1, x2, y2 = int(detection.xmin * depthWidth), int(detection.ymin * depthHeight), \
+                                int(detection.xmax * depthWidth), int(detection.ymax * depthHeight)
                 label = detection.label
 
                 # Compute center of bounding box
@@ -78,7 +109,17 @@ with dai.Device(pipeline) as device:
                 else:
                     distance = None
 
-                object_list.append({"label": label, "distance_mm": distance})
+                if cx < depthWidth / 3:
+                    quadrant = "Left"
+                elif cx < 2 * depthWidth / 3:
+                    quadrant = "Middle"
+                else:
+                    quadrant = "Right"
+
+                object_list.append({"label": label, "distance_mm": distance, "quadrant": quadrant})
+
+                for quadrant, distance in object_list.items():
+                    set_pwm_duty_cycle(quadrant, distance)
 
         print("Detected Objects:", object_list)
         
