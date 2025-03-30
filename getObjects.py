@@ -1,5 +1,5 @@
 import depthai as dai
-import RPi.GPIO as GPIO
+import gpiod
 import time
 import numpy as np
 
@@ -51,32 +51,33 @@ camRgb.preview.link(detectionNetwork.input)
 detectionNetwork.out.link(xoutNN.input)
 stereo.depth.link(xoutDepth.input)
 
-# Raspberry Pi Setup
+# GPIO Setup using gpiod
+chip = gpiod.Chip('/dev/gpiochip0')
 
+# Define the GPIO pins
 pins = {
-    'left': 32,        # GPIO12
-    'middle': 33, # GPIO13
-    'right': 35        # GPIO19
+    'Left': 32,    # Replace with actual pin numbers
+    'Middle': 33,  # Replace with actual pin numbers
+    'Right': 35    # Replace with actual pin numbers
 }
 
-GPIO.setmode(GPIO.BOARD)
-for pin in pins.values():
-    GPIO.setup(pin, GPIO.OUT)
+# Set pins as outputs
+outputs = {key: chip.get_line(pin) for key, pin in pins.items()}
+for line in outputs.values():
+    line.request(consumer='pwm', type=gpiod.LINE_REQ_DIR_OUT)
 
-pwm = {key: GPIO.PWM(pin, 1000) for key, pin in pins.items()}
-for p in pwm.values():
-    p.start(0)
-
-def set_pwm_duty_cycle(quadrant, distance_mm):
+# PWM Settings
+def set_pwm_duty_cycle(pin, duty_cycle):
     """
-    Sets the PWM duty cycle for the specified quadrant based on distance.
-    Distance is expected to be between 500 mm and 10,000 mm.
+    Set the PWM duty cycle for the specified pin.
+    duty_cycle: The duty cycle in percentage (0 - 100).
     """
-    if distance_mm < 500 or distance_mm > 10000:
-        duty_cycle = 0
-    else:
-        duty_cycle = ((10000 - distance_mm) / 9500) * 100
-    pwm[quadrant].ChangeDutyCycle(duty_cycle)
+    period = 10000  # 10 ms period for PWM
+    pulse_width = int((duty_cycle / 100) * period)
+    chip.set_line_value(pin, 1)  # Activate pin
+    time.sleep(pulse_width / 1000000)  # Sleep for pulse width in seconds
+    chip.set_line_value(pin, 0)  # Deactivate pin
+    time.sleep((period - pulse_width) / 1000000)  # Sleep for the rest of the period
 
 # Connect to device and start pipeline
 with dai.Device(pipeline) as device:
@@ -117,9 +118,13 @@ with dai.Device(pipeline) as device:
                     quadrant = "Right"
 
                 object_list.append({"label": label, "distance_mm": distance, "quadrant": quadrant})
-
-                for quadrant, distance in object_list.items():
-                    set_pwm_duty_cycle(quadrant, distance)
+                
+                # Set PWM duty cycle based on the detected distance
+                if distance is not None:
+                    duty_cycle = max(0, min(100, ((10000 - distance) / 9500) * 100))
+                    set_pwm_duty_cycle(pins[quadrant], duty_cycle)
+                else:
+                    set_pwm_duty_cycle(pins[quadrant], 0)
 
         print("Detected Objects:", object_list)
         
