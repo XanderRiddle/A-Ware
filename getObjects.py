@@ -52,80 +52,140 @@ detectionNetwork.out.link(xoutNN.input)
 stereo.depth.link(xoutDepth.input)
 
 # GPIO Setup using gpiod
-chip = gpiod.Chip('/dev/gpiochip0')
+try:
+    chip = gpiod.chip('gpiochip0')  # Changed from gpiod.Chip to gpiod.chip
+except Exception as e:
+    print(f"Failed to open GPIO chip: {e}")
+    sys.exit(1)
 
-# Define the GPIO pins
+# Define the GPIO pins (adjust these to your actual GPIO numbers)
 pins = {
-    'Left': 0,    # Replace with actual pin numbers
-    'Middle': 4,  # Replace with actual pin numbers
-    'Right': 3    # Replace with actual pin numbers
+    'Left': 17,    # Example GPIO number
+    'Middle': 27,  # Example GPIO number
+    'Right': 22    # Example GPIO number
 }
 
-# Set pins as outputs
-outputs = {key: chip.get_line(pin) for key, pin in pins.items()}
-for line in outputs.values():
-    line.request(consumer='pwm', type=gpiod.LINE_REQ_DIR_OUT)
+# Dictionary to hold our GPIO lines
+gpio_lines = {}
+
+try:
+    for name, pin in pins.items():
+        try:
+            line = chip.get_line(pin)
+            line.request(consumer='depthai_pwm', type=gpiod.LINE_REQ_DIR_OUT)
+            gpio_lines[name] = line
+            print(f"Successfully configured GPIO {pin} for {name}")
+        except Exception as e:
+            print(f"Failed to configure GPIO {pin} for {name}: {e}")
+            gpio_lines[name] = None
+except Exception as e:
+    print(f"GPIO configuration failed: {e}")
+    sys.exit(1)
 
 # PWM Settings
-def set_pwm_duty_cycle(pin, duty_cycle):
+def set_pwm_duty_cycle(line, duty_cycle):
     """
-    Set the PWM duty cycle for the specified pin.
+    Set the PWM duty cycle for the specified GPIO line.
+    line: gpiod.Line object
     duty_cycle: The duty cycle in percentage (0 - 100).
     """
-    period = 10000  # 10 ms period for PWM
-    pulse_width = int((duty_cycle / 100) * period)
-    chip.set_line_value(pin, 1)  # Activate pin
-    time.sleep(pulse_width / 1000000)  # Sleep for pulse width in seconds
-    chip.set_line_value(pin, 0)  # Deactivate pin
-    time.sleep((period - pulse_width) / 1000000)  # Sleep for the rest of the period
+    if line is None:
+        return
+        
+    period = 0.01  # 10 ms period for PWM
+    pulse_width = (duty_cycle / 100) * period
+    
+    try:
+        line.set_value(1)  # Activate pin
+        time.sleep(pulse_width)
+        line.set_value(0)  # Deactivate pin
+        time.sleep(period - pulse_width)
+    except Exception as e:
+        print(f"PWM control error: {e}")
 
 # Connect to device and start pipeline
-with dai.Device(pipeline) as device:
-    detectionsQueue = device.getOutputQueue(name="detections", maxSize=4, blocking=False)
-    depthQueue = device.getOutputQueue(name="depth", maxSize=4, blocking=False)
+try:
+    with dai.Device(pipeline) as device:
+        print("DepthAI pipeline started")
+        detectionsQueue = device.getOutputQueue(name="detections", maxSize=4, blocking=False)
+        depthQueue = device.getOutputQueue(name="depth", maxSize=4, blocking=False)
 
-    while True:
-        detections = detectionsQueue.get().detections
-        depthFrame = depthQueue.get().getFrame()
-        depthFrame = np.array(depthFrame, dtype=np.uint16)  # Convert depth frame to NumPy array
+        while True:
+            try:
+                detections = detectionsQueue.get().detections
+                depthFrame = depthQueue.get().getFrame()
+                depthFrame = np.array(depthFrame, dtype=np.uint16)  # Convert depth frame to NumPy array
 
-        depthHeight = depthFrame.shape[0]
-        depthWidth = depthFrame.shape[1]
+                depthHeight = depthFrame.shape[0]
+                depthWidth = depthFrame.shape[1]
 
-        object_list = []
-        if detections:
-            for detection in detections:
-                x1, y1, x2, y2 = int(detection.xmin * depthWidth), int(detection.ymin * depthHeight), \
-                                int(detection.xmax * depthWidth), int(detection.ymax * depthHeight)
-                label = detection.label
+                object_list = []
+                if detections:
+                    for detection in detections:
+                        x1 = int(detection.xmin * depthWidth)
+                        y1 = int(detection.ymin * depthHeight)
+                        x2 = int(detection.xmax * depthWidth)
+                        y2 = int(detection.ymax * depthHeight)
+                        label = detection.label
 
-                # Compute center of bounding box
-                cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+                        # Compute center of bounding box
+                        cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
 
-                # Ensure coordinates are within bounds
-                if 0 <= cx < depthFrame.shape[1] and 0 <= cy < depthFrame.shape[0]:
-                    distance = int(depthFrame[cy, cx])  # Extract distance in mm
-                    if distance == 0:
-                        distance = None  # Ignore invalid depth values
-                else:
-                    distance = None
+                        # Ensure coordinates are within bounds
+                        if 0 <= cx < depthFrame.shape[1] and 0 <= cy < depthFrame.shape[0]:
+                            distance = int(depthFrame[cy, cx])  # Extract distance in mm
+                            if distance == 0:
+                                distance = None  # Ignore invalid depth values
+                        else:
+                            distance = None
 
-                if cx < depthWidth / 3:
-                    quadrant = "Left"
-                elif cx < 2 * depthWidth / 3:
-                    quadrant = "Middle"
-                else:
-                    quadrant = "Right"
+                        if cx < depthWidth / 3:
+                            quadrant = "Left"
+                        elif cx < 2 * depthWidth / 3:
+                            quadrant = "Middle"
+                        else:
+                            quadrant = "Right"
 
-                object_list.append({"label": label, "distance_mm": distance, "quadrant": quadrant})
+                        object_list.append({
+                            "label": label, 
+                            "distance_mm": distance, 
+                            "quadrant": quadrant
+                        })
+                        
+                        # Set PWM duty cycle based on the detected distance
+                        if distance is not None and quadrant in gpio_lines:
+                            # Map distance to duty cycle (adjust these values as needed)
+                            duty_cycle = max(0, min(100, ((10000 - distance) / 9500) * 100))
+                            set_pwm_duty_cycle(gpio_lines[quadrant], duty_cycle)
+                        elif quadrant in gpio_lines:
+                            set_pwm_duty_cycle(gpio_lines[quadrant], 0)
+
+                print("Detected Objects:", object_list)
                 
-                # Set PWM duty cycle based on the detected distance
-                if distance is not None:
-                    duty_cycle = max(0, min(100, ((10000 - distance) / 9500) * 100))
-                    set_pwm_duty_cycle(pins[quadrant], duty_cycle)
-                else:
-                    set_pwm_duty_cycle(pins[quadrant], 0)
+                time.sleep(0.1)  # Reduced sleep time for more responsive PWM
 
-        print("Detected Objects:", object_list)
-        
-        time.sleep(0.5)  # Print every 0.5 seconds
+            except Exception as e:
+                print(f"Processing error: {e}")
+                time.sleep(1)
+
+except Exception as e:
+    print(f"DepthAI error: {e}")
+
+finally:
+    # Cleanup GPIO
+    print("Cleaning up GPIO...")
+    for name, line in gpio_lines.items():
+        if line is not None:
+            try:
+                line.set_value(0)
+                line.release()
+            except Exception as e:
+                print(f"Error cleaning up GPIO {name}: {e}")
+    
+    if 'chip' in locals():
+        try:
+            chip.close()
+        except Exception as e:
+            print(f"Error closing GPIO chip: {e}")
+    
+    print("Script ended")
