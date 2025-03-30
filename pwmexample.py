@@ -3,7 +3,7 @@ import gpiod
 from gpiod.line import Direction, Value
 
 # 1. Create the line settings
-line_settings = gpiod.line_settings()
+line_settings = gpiod.LineSettings()
 line_settings.direction = Direction.OUTPUT  # Set as output
 line_settings.output_value = Value.ACTIVE   # Default HIGH (3.3V)
 
