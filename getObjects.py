@@ -56,9 +56,9 @@ chip = gpiod.Chip('/dev/gpiochip0')
 
 # Define the GPIO pins
 pins = {
-    'Left': 32,    # Replace with actual pin numbers
-    'Middle': 33,  # Replace with actual pin numbers
-    'Right': 35    # Replace with actual pin numbers
+    'Left': 0,    # Replace with actual pin numbers
+    'Middle': 4,  # Replace with actual pin numbers
+    'Right': 3    # Replace with actual pin numbers
 }
 
 # Set pins as outputs
