@@ -13,7 +13,7 @@ def main():
     
     try:
         # Get the GPIO chip
-        chip = gpiod.chip(GPIO_CHIP)
+        chip = gpiod.Chip(GPIO_CHIP)
         
         # Get the GPIO line
         line = chip.get_line(GPIO_PIN)
