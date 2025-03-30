@@ -2,25 +2,13 @@
 import gpiod
 import time
 
-# Using gpiochip0, offset 0 as example (change to your working GPIO)
-CHIP = '/dev/gpiochip0'
-OFFSET = 0  # Change this to your working GPIO offset
+# RAW GPIO OUTPUT - NO ERROR HANDLING
+chip = gpiod.Chip('/dev/gpiochip0')  # Will crash if doesn't exist
+line = chip.get_line(0)             # Will crash if invalid offset
+line.request(consumer="raw-output", type=gpiod.LINE_REQ_DIR_OUT)
 
-try:
-    chip = gpiod.Chip(CHIP)
-    line = chip.get_line(OFFSET)
-    line.request(consumer="5v-test", type=gpiod.LINE_REQ_DIR_OUT)
-    
-    print(f"Setting GPIO {OFFSET} to HIGH (3.3V)")
-    line.set_value(1)
-    print("Voltage should now be active. Press Ctrl+C to stop.")
-    
-    while True:
-        time.sleep(1)
-        
-except KeyboardInterrupt:
-    print("\nShutting down")
-finally:
-    line.set_value(0)
-    line.release()
-    chip.close()
+print("Setting GPIO HIGH (3.3V) - Ctrl+C to stop")
+line.set_value(1)  # 3.3V output
+
+while True:
+    time.sleep(1)
