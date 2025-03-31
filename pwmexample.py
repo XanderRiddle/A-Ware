@@ -5,7 +5,7 @@ with gpiod.Chip("/dev/gpiochip0") as chip:
     config = {
         5: gpiod.LineSettings(
             direction=gpiod.line.Direction.OUTPUT,
-            output_value=gpiod.line.Value(0)
+            output_value=gpiod.line.Value(1)
         )
     }
     request = chip.request_lines(config=config, consumer="test-pin22")
