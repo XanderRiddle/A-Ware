@@ -5,7 +5,7 @@ from gpiod.line import Direction, Value
 # 1. Create the line settings
 line_settings = gpiod.LineSettings()
 line_settings.direction = Direction.OUTPUT  # Set as output
-line_settings.output_value = Value.ACTIVE   # Default HIGH (3.3V)
+line_settings.output_value = Value.INACTIVE   # Default HIGH (3.3V)
 
 # 2. Create the config dictionary
 config = {
@@ -19,7 +19,7 @@ with gpiod.Chip('/dev/gpiochip0') as chip:
     request = chip.request_lines(
         config=config,
         consumer="my-pwm-control",
-        output_values={3: Value.ACTIVE}  # Immediately set HIGH
+        output_values={3: Value.INACTIVE}  # Immediately set HIGH
     )
     
     # Keep the line active until Ctrl+C
