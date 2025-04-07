@@ -11,59 +11,56 @@ left_pwm = None
 middle_pwm = None
 right_pwm = None
 
-def initializeGPIO():
-    LEFT_PWM_PIN = 18
-    MIDDLE_PWM_PIN = 19
-    RIGHT_PWM_PIN = 20
+# initialize GPIO
+LEFT_PWM_PIN = 18
+MIDDLE_PWM_PIN = 19
+RIGHT_PWM_PIN = 20
 
-    left_pwm = GPIO.PWM(LEFT_PWM_PIN, 1000)
-    middle_pwm = GPIO.PWM(MIDDLE_PWM_PIN, 1000)
-    right_pwm = GPIO.PWM(RIGHT_PWM_PIN, 1000)
+left_pwm = GPIO.PWM(LEFT_PWM_PIN, 1000)
+middle_pwm = GPIO.PWM(MIDDLE_PWM_PIN, 1000)
+right_pwm = GPIO.PWM(RIGHT_PWM_PIN, 1000)
 
-    left_pwm.start(0)
-    middle_pwm.start(0)
-    right_pwm.start(0)
+left_pwm.start(0)
+middle_pwm.start(0)
+right_pwm.start(0)
 
-def camera_setup():
-    monoLeft = pipeline.create(dai.node.MonoCamera)
-    monoRight = pipeline.create(dai.node.MonoCamera)
-    stereo = pipeline.create(dai.node.StereoDepth)
-    camRgb = pipeline.create(dai.node.ColorCamera)
-    detectionNetwork = pipeline.create(dai.node.MobileNetDetectionNetwork)
+# setup camera
+monoLeft = pipeline.create(dai.node.MonoCamera)
+monoRight = pipeline.create(dai.node.MonoCamera)
+stereo = pipeline.create(dai.node.StereoDepth)
+camRgb = pipeline.create(dai.node.ColorCamera)
+detectionNetwork = pipeline.create(dai.node.MobileNetDetectionNetwork)
 
-    xoutNN = pipeline.create(dai.node.XLinkOut)
-    xoutDepth = pipeline.create(dai.node.XLinkOut)
+xoutNN = pipeline.create(dai.node.XLinkOut)
+xoutDepth = pipeline.create(dai.node.XLinkOut)
 
-    xoutNN.setStreamName("detections")
-    xoutDepth.setStreamName("depth")
+xoutNN.setStreamName("detections")
+xoutDepth.setStreamName("depth")
 
-    monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
-    monoLeft.setBoardSocket(dai.CameraBoardSocket.LEFT)
+monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
+monoLeft.setBoardSocket(dai.CameraBoardSocket.LEFT)
 
-    monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
-    monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
+monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
+monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
 
-    stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_ACCURACY)
-    stereo.setLeftRightCheck(True)
-    stereo.setSubpixel(True)
+stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_ACCURACY)
+stereo.setLeftRightCheck(True)
+stereo.setSubpixel(True)
 
-    monoLeft.out.link(stereo.left)
-    monoRight.out.link(stereo.right)
+monoLeft.out.link(stereo.left)
+monoRight.out.link(stereo.right)
 
-    camRgb.setPreviewSize(300, 300)
-    camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
-    camRgb.setInterleaved(False)
-    camRgb.setFps(30)
+camRgb.setPreviewSize(300, 300)
+camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+camRgb.setInterleaved(False)
+camRgb.setFps(30)
 
-    detectionNetwork.setBlobPath("mobilenet-ssd_openvino_2021.4_6shave.blob")  # Pretrained Model
-    detectionNetwork.setConfidenceThreshold(0.5)
-    camRgb.preview.link(detectionNetwork.input)
+detectionNetwork.setBlobPath("mobilenet-ssd_openvino_2021.4_6shave.blob")  # Pretrained Model
+detectionNetwork.setConfidenceThreshold(0.5)
+camRgb.preview.link(detectionNetwork.input)
 
-    detectionNetwork.out.link(xoutNN.input)
-    stereo.depth.link(xoutDepth.input)
-
-initializeGPIO
-camera_setup
+detectionNetwork.out.link(xoutNN.input)
+stereo.depth.link(xoutDepth.input)
 
 with dai.Device(pipeline) as device:
     detectionsQueue = device.getOutputQueue(name="detections", maxSize=4, blocking=False)
@@ -72,12 +69,11 @@ with dai.Device(pipeline) as device:
     while True:
         detections = detectionsQueue.get().detections
         depthFrame = depthQueue.get().getFrame()
-        depthFrame = np.array(depthFrame, dtype=np.uint16)  # Convert depth frame to NumPy array
+        depthFrame = np.array(depthFrame, dtype=np.uint16)
 
         depthHeight = depthFrame.shape[0]
         depthWidth = depthFrame.shape[1]
 
-        # Reset PWM signals
         left_intensity = 0
         middle_intensity = 0
         right_intensity = 0
@@ -88,14 +84,12 @@ with dai.Device(pipeline) as device:
                                 int(detection.xmax * depthWidth), int(detection.ymax * depthHeight)
                 label = detection.label
 
-                # Compute center of bounding box
                 cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
 
-                # Ensure coordinates are within bounds
                 if 0 <= cx < depthFrame.shape[1] and 0 <= cy < depthFrame.shape[0]:
-                    distance = int(depthFrame[cy, cx])  # Extract distance in mm
+                    distance = int(depthFrame[cy, cx])
                     if distance == 0:
-                        distance = None  # Ignore invalid depth values
+                        distance = None
                 else:
                     distance = None
 
