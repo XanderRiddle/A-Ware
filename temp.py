@@ -62,7 +62,8 @@ def camera_setup():
     detectionNetwork.out.link(xoutNN.input)
     stereo.depth.link(xoutDepth.input)
 
-
+initializeGPIO
+camera_setup
 
 with dai.Device(pipeline) as device:
     detectionsQueue = device.getOutputQueue(name="detections", maxSize=4, blocking=False)
