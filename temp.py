@@ -28,7 +28,7 @@ def camera_setup():
     monoLeft = pipeline.create(dai.node.MonoCamera)
     monoRight = pipeline.create(dai.node.MonoCamera)
     stereo = pipeline.create(dai.node.StereoDepth)
-    # camRgb = pipeline.create(dai.node.ColorCamera)
+    camRgb = pipeline.create(dai.node.ColorCamera)
     detectionNetwork = pipeline.create(dai.node.MobileNetDetectionNetwork)
 
     xoutNN = pipeline.create(dai.node.XLinkOut)
@@ -50,14 +50,14 @@ def camera_setup():
     monoLeft.out.link(stereo.left)
     monoRight.out.link(stereo.right)
 
-    # camRgb.setPreviewSize(300, 300)
-    # camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
-    # camRgb.setInterleaved(False)
-    # camRgb.setFps(30)
+    camRgb.setPreviewSize(300, 300)
+    camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+    camRgb.setInterleaved(False)
+    camRgb.setFps(30)
 
     detectionNetwork.setBlobPath("mobilenet-ssd_openvino_2021.4_6shave.blob")  # Pretrained Model
     detectionNetwork.setConfidenceThreshold(0.5)
-    # camRgb.preview.link(detectionNetwork.input)
+    camRgb.preview.link(detectionNetwork.input)
 
     detectionNetwork.out.link(xoutNN.input)
     stereo.depth.link(xoutDepth.input)
