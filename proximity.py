@@ -1,3 +1,7 @@
+# Proximity: Human Detection with 3-Channel PWM Output
+# Xander Riddle
+# Spring 2025
+
 import depthai as dai
 import time
 import numpy as np
