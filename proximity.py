@@ -5,7 +5,7 @@
 import depthai as dai
 import time
 import numpy as np
-# import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 from util import *
 
 # Define GPIO pins for PWM output
