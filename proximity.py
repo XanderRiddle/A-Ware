@@ -1,7 +1,8 @@
 import depthai as dai
 import time
 import numpy as np
-import RPi.GPIO as GPIO
+# import RPi.GPIO as GPIO
+from util import *
 
 # Define GPIO pins for PWM output
 LEFT_PWM_PIN = 18
@@ -22,14 +23,6 @@ right_pwm = GPIO.PWM(RIGHT_PWM_PIN, 1000)
 left_pwm.start(0)
 middle_pwm.start(0)
 right_pwm.start(0)
-
-# Function to map distance to PWM duty cycle
-def map_distance_to_pwm(distance):
-    if distance is None or distance > 10000:
-        return 0  # No signal if out of range
-    elif distance < 500:
-        return 100  # Max signal if too close
-    return int((100 - ((distance - 500) / (10000 - 500) * 100)))
 
 # Create pipeline
 pipeline = dai.Pipeline()
@@ -56,7 +49,8 @@ monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
 monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
 
 # Configure Stereo Depth
-stereo.setDefaultProfilePreset(dai.node.St stereo.setLeftRightCheck(True))
+stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_ACCURACY)
+stereo.setLeftRightCheck(True)
 stereo.setSubpixel(True)
 
 # Connect Mono Cameras to Stereo Depth
