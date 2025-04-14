@@ -2,7 +2,7 @@ import depthai as dai
 import time
 import numpy as np
 import RPi.GPIO as GPIO
-import util
+from util import *
 
 detection_model = "mobilenet-ssd_openvino_2021.4_6shave.blob"
 
@@ -60,7 +60,7 @@ camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
 camRgb.setInterleaved(False)
 camRgb.setFps(30)
 
-detectionNetwork.setBlobPath("mobilenet-ssd_openvino_2021.4_6shave.blob")  # Pretrained Model
+detectionNetwork.setBlobPath(detection_model)  # Pretrained Model
 detectionNetwork.setConfidenceThreshold(0.5)
 camRgb.preview.link(detectionNetwork.input)
 
