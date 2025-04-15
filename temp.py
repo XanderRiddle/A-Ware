@@ -98,7 +98,7 @@ with dai.Device(pipeline) as device:
                 else:
                     distance = None
 
-                intensity = util.map_distance_to_pwm(distance)
+                intensity = map_distance_to_pwm(distance)
 
                 if cx < depthWidth / 3:
                     left_intensity = max(left_intensity, intensity)
