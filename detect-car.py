@@ -183,7 +183,7 @@ def match_tracks(dets, tracks):
 # --- Callbacks ---
 def detection_cb(pkt: DetectionPacket):
     global detections
-    detections = decode(pkt.detections)
+    detections = pkt.detections
     update_tracks()
 
 def depth_cb(pkt: DetectionPacket):
@@ -194,14 +194,10 @@ def depth_cb(pkt: DetectionPacket):
 def update_tracks():
     global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity, timeout
     if detections is None or len(detections.detections) == 0 or depth_frame is None:
+        tracked.clear()
         return
     dt = time.time() - last_time
     last_time = time.time()
-
-    if detections is None or len(detections.detections) == 0:
-        tracked.clear()
-        print("return 2")
-        return
 
     matches = match_tracks(detections, tracked)
     updated = {}
@@ -245,13 +241,13 @@ def update_tracks():
 # Run Object Detection
 color = oak.create_camera("color", str(width) + "p")
 stereo = oak.create_stereo("800p")
-nn = oak.create_nn("vehicle-detection-0202", color, decode_fn=None)
+nn = oak.create_nn("vehicle-detection-0202", color, decode_fn=decode)
 stereo.config_stereo(align=color)
 
 oak.callback(nn.out.main, detection_cb)
 oak.callback(stereo.out.depth, depth_cb)
 
-oak.visualize(nn.out.passthrough, fps=True).detections(thickness=2).text(auto_scale=True)
+oak.visualize(nn.out.main, fps=True).detections(thickness=2).text(auto_scale=True)
 oak.start(blocking=False)
 
 while oak.running():
