@@ -22,7 +22,9 @@ TIMEOUT_LENGTH = 0.5 # Time without detections before GPIO output resets
 
 # --- GPIO pins for PWM output ---
 if send_to_GPIO:
-    timeout = 0
+    left_timeout = 0
+    middle_timeout = 0
+    right_timeout = 0
 
     LEFT_PWM_PIN = 18
     MIDDLE_PWM_PIN = 19
@@ -206,7 +208,7 @@ def depth_cb(pkt: DetectionPacket):
     update_tracks()
 
 def update_tracks():
-    global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity, timeout
+    global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity, left_timeout
 
     if not detections or depth_frame is None:
         print("No detections or depth frame available.")
@@ -249,19 +251,15 @@ def update_tracks():
             intensity = map_distance_to_pwm(pos[2])  # Map position to PWM intensity
             if cxy[0] < 1 / 3:
                 left_intensity = max(left_intensity, intensity)
+                left_timeout = time.time()
             elif cxy[0] < 2  / 3:
                 middle_intensity = max(middle_intensity, intensity)
+                middle_timeout = time.time()
             else:
                 right_intensity = max(right_intensity, intensity)
-            timeout = time.time()  # Reset the timeout counter
+                right_timeout = time.time()
 
     tracked = updated
-
-    # If no new detections were found (timeout), reset PWM intensities
-    if time.time() - timeout >= TIMEOUT_LENGTH and send_to_GPIO:
-        left_intensity = 0
-        middle_intensity = 0
-        right_intensity = 0
 
 # --- Main ---
 # Run Object Detection
@@ -278,9 +276,11 @@ oak.start(blocking=False)
 
 while oak.running():
     if send_to_GPIO: # Reset GPIO Duty Cycles
-        if time.time() - timeout >= TIMEOUT_LENGTH:
+        if time.time() - left_timeout >= TIMEOUT_LENGTH:
             left_intensity = 0
+        if time.time() - middle_timeout >= TIMEOUT_LENGTH:
             middle_intensity = 0
+        if time.time() - right_timeout >= TIMEOUT_LENGTH:
             right_intensity = 0
 
         oak.poll()
