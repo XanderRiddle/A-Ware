@@ -193,7 +193,7 @@ def depth_cb(pkt: DetectionPacket):
 
 def update_tracks():
     global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity, timeout
-    if detections is None or len(detections.detections) == 0 or depth_frame is None:
+    if detections is None or len(detections) == 0 or depth_frame is None:
         tracked.clear()
         return
     dt = time.time() - last_time
