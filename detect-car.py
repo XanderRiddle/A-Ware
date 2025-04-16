@@ -13,7 +13,7 @@ if send_to_GPIO:
     import RPi.GPIO as GPIO
 
 # --- Config ---
-CONFIDENCE_THRESHOLD = 0.95 # Required confidence for object detection
+CONFIDENCE_THRESHOLD = 0.97 # Required confidence for object detection
 MAX_MATCH_DIST = 0.3 # Maximum distance for a detection to be matched to an existing track
 MIN_NEW_OBJ_DIST = 0.2 # Minimum distance for a new detection to be separate from existing tracks
 POS_SMOOTHING = 0.2 # Smooths position readings, 1 = no smoothing
@@ -247,6 +247,7 @@ def update_tracks():
 
         if send_to_GPIO and 0 <= cxy[0] <= width and 0 <= cxy[1] <= height:
             intensity = map_distance_to_pwm(pos[2])  # Map position to PWM intensity
+            print(cxy)
             if cxy[0] < width / 3:
                 left_intensity = max(left_intensity, intensity)
             elif cxy[0] < 2 * width / 3:
