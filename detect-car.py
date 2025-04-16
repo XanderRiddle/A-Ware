@@ -18,6 +18,7 @@ MAX_MATCH_DIST = 0.3 # Maximum distance for a detection to be matched to an exis
 MIN_NEW_OBJ_DIST = 0.2 # Minimum distance for a new detection to be separate from existing tracks
 POS_SMOOTHING = 0.2 # Smooths position readings, 1 = no smoothing
 VEL_SMOOTHING = 0.2 # Smooths velocity readings, 1 = no smoothing
+TIMEOUT_LENGTH = 0.5 # Time without detections before GPIO output resets
 
 # --- GPIO pins for PWM output ---
 if send_to_GPIO:
@@ -251,7 +252,7 @@ oak.start(blocking=False)
 
 while oak.running():
     if send_to_GPIO: # Reset GPIO Duty Cycles
-        if time.time() - timeout >= 1:
+        if time.time() - timeout >= TIMEOUT_LENGTH:
             left_intensity = 0
             middle_intensity = 0
             right_intensity = 0
