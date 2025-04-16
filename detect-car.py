@@ -92,11 +92,12 @@ def decode(nn_data: NNData) -> Detections:
     Returns a 'Detections' list of detections above the specified confidence threshold.
     """
     dets = Detections(nn_data)
+    filteredDets = Detections()
 
     for det in np.array(nn_data.getFirstLayerFp16()).reshape((1, 1, -1, 7))[0][0]:
         if det[2] > CONFIDENCE_THRESHOLD:
-            dets.add(int(det[1]), det[2], det[3:])
-    return dets
+            filteredDets.add(int(det[1]), det[2], det[3:])
+    return filteredDets
 
 def center(b):
     """
