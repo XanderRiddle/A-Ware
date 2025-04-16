@@ -245,7 +245,7 @@ stereo = oak.create_stereo("800p")
 nn = oak.create_nn("vehicle-detection-0202", color, decode_fn=None)
 stereo.config_stereo(align=color)
 
-oak.callback(nn.out, detection_cb)
+oak.callback(nn.out.main, detection_cb)
 oak.callback(stereo.out.depth, depth_cb)
 
 oak.visualize(nn.out.passthrough, fps=True).detections(thickness=2).text(auto_scale=True)
