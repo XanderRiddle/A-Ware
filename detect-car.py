@@ -35,6 +35,11 @@ if send_to_GPIO:
     left_pwm = GPIO.PWM(LEFT_PWM_PIN, 1000)
     middle_pwm = GPIO.PWM(MIDDLE_PWM_PIN, 1000)
     right_pwm = GPIO.PWM(RIGHT_PWM_PIN, 1000)
+
+    left_intensity = 0
+    middle_intensity = 0
+    right_intensity = 0
+
     left_pwm.start(0)
     middle_pwm.start(0)
     right_pwm.start(0)
