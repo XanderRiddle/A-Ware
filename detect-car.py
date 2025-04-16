@@ -92,7 +92,7 @@ def decode(nn_data: NNData) -> Detections:
     Returns a 'Detections' list of detections above the specified confidence threshold.
     """
     dets = Detections(nn_data)
-    filteredDets = Detections()
+    filteredDets = Detections(NNData())
 
     for det in dets.detections:
         if det.confidence > CONFIDENCE_THRESHOLD:
