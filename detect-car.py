@@ -182,7 +182,6 @@ def match_tracks(dets, tracks):
 
 # --- Callbacks ---
 def detection_cb(pkt: DetectionPacket):
-    print("RECEIVED DETECTIONS")
     global detections
     detections = decode(pkt.detections)
     update_tracks()
@@ -206,6 +205,7 @@ def update_tracks():
     matches = match_tracks(detections, tracked)
     updated = {}
     for tid, didx in matches.items():
+        print(str(didx))
         det = detections[didx]
         old_data = tracked.get(tid, {})
         bbox = [det.xmin, det.ymin, det.xmax, det.ymax]
