@@ -222,7 +222,7 @@ def update_tracks():
     # Process each matched track
     for tid, didx in matches.items():
         det = detections[didx]
-        oldCxy, oldPos, oldVel = tracked.get(tid, {'center': (0, 0, 0), 'position': (0, 0, 0), 'velocity': (0, 0, 0)})
+        oldCxy, oldPos, oldVel = tracked.get(tid, {'center': (0, 0, 0), 'position': (0, 0, 0), 'velocity': (0, 0, 0)}).values()
         bbox = [det.xmin, det.ymin, det.xmax, det.ymax]
         cxy = center(bbox)
 
