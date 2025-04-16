@@ -182,7 +182,7 @@ def match_tracks(dets, tracks):
 # --- Callbacks ---
 def detection_cb(pkt: DetectionPacket):
     global detections
-    detections = pkt.img_detections.detections if hasattr(pkt, 'img_detections') else None
+    detections = decode(pkt.nn_data)
     update_tracks()
 
 def depth_cb(pkt: DetectionPacket):
