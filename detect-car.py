@@ -249,6 +249,7 @@ def update_tracks():
 
         if send_to_GPIO and 0 <= cxy[0] <= width and 0 <= cxy[1] <= height:
             intensity = map_distance_to_pwm(pos[2])  # Map position to PWM intensity
+            print("Left PWM:", left_intensity, "Middle PWM:", middle_intensity, "Right PWM:", right_intensity)
             if cxy[0] < 1 / 3:
                 left_intensity = max(left_intensity, intensity)
                 left_timeout = time.time()
@@ -288,8 +289,6 @@ while oak.running():
         left_pwm.ChangeDutyCycle(left_intensity)
         middle_pwm.ChangeDutyCycle(middle_intensity)
         right_pwm.ChangeDutyCycle(right_intensity)
-        if left_intensity + middle_intensity + right_intensity > 0:
-            print("Left PWM:", left_intensity, "Middle PWM:", middle_intensity, "Right PWM:", right_intensity)
     else:
         oak.poll()
 
