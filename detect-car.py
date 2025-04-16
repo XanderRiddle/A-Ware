@@ -207,46 +207,62 @@ def depth_cb(pkt: DetectionPacket):
 
 def update_tracks():
     global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity, timeout
-    if detections is None or len(detections) == 0 or depth_frame is None:
-        print("Detections or depth frame is empty.")
-        tracked.clear()
+
+    if not detections or depth_frame is None:
+        print("No detections or depth frame available.")
+        tracked.clear()  # Clear the tracked objects if detections are empty
         return
-    dt = time.time() - last_time
-    last_time = time.time()
 
-    matches = match_tracks(detections, tracked)
-    updated = {}
+    dt = time.time() - last_time  # Calculate delta time (time elapsed)
+    last_time = time.time()  # Update the last time for the next cycle
+
+    matches = match_tracks(detections, tracked)  # Get the matches between detections and tracked objects
+    updated = {}  # Dictionary to store updated tracked objects
+
+    # Process each matched track
     for tid, didx in matches.items():
-        det = detections[didx]
-        old_data = tracked.get(tid, {})
-        bbox = [det.xmin, det.ymin, det.xmax, det.ymax]
-        cxy = center(bbox)
+        det = detections[didx]  # Get the detection corresponding to the track ID
+        old_data = tracked.get(tid, {})  # Get existing track data or empty if new
+        bbox = [det.xmin, det.ymin, det.xmax, det.ymax]  # Bounding box
+        cxy = center(bbox)  # Calculate the center of the bounding box
 
-        pos = get_3d_pos(bbox, depth_frame, oc_x, oc_y, fl_x, fl_y)
-        vel = (0, 0, 0)
-        if pos == None and old_data == {}:
-            print("Issue with determining position.")
-            continue
-        elif pos == None: # Current position/velocity failed, so use old ones.
-            pos = old_data["position"]
-            vel = old_data["velocity"]
-        else: # Try to smooth out the position/velocity using old data.
+        pos = get_3d_pos(bbox, depth_frame, oc_x, oc_y, fl_x, fl_y)  # Calculate 3D position
+        vel = (0, 0, 0)  # Default velocity
+
+        if pos is None:  # If position is invalid
+            if not old_data:
+                print(f"Skipping track ID {tid} due to invalid position and no old data.")
+                continue
+            pos = old_data["position"]  # Use the old position if no new position found
+            vel = old_data["velocity"]  # Use the old velocity if no new velocity found
+        else:
+            # Apply smoothing for position and velocity
             pos = tuple(old_data["position"][i] + POS_SMOOTHING * (pos[i] - old_data["position"][i]) for i in range(3))
             vel = tuple(old_data["velocity"][i] + VEL_SMOOTHING * (vel[i] - old_data["velocity"][i]) for i in range(3))
+
         updated[tid] = {'center': cxy, 'position': pos, 'velocity': vel}
+
         print(f"ID {tid}: Pos=({pos[0]:.2f},{pos[1]:.2f},{pos[2]:.2f})m Vel=({vel[0]:.1f},{vel[1]:.1f},{vel[2]:.1f})m/s")
 
         if send_to_GPIO and 0 <= cxy[0] <= width and 0 <= cxy[1] <= height:
-            intensity = map_distance_to_pwm(pos[2])
+            intensity = map_distance_to_pwm(pos[2])  # Map position to PWM intensity
+            # Determine the PWM pin based on object position
             if cxy[0] < width / 3:
                 left_intensity = max(left_intensity, intensity)
             elif cxy[0] < 2 * width / 3:
                 middle_intensity = max(middle_intensity, intensity)
             else:
                 right_intensity = max(right_intensity, intensity)
-            timeout = time.time()
+            timeout = time.time()  # Reset the timeout counter
 
-    tracked = updated
+    # Update tracked objects with the new data
+    tracked.update(updated)
+
+    # If no new detections were found (timeout), reset PWM intensities
+    if time.time() - timeout >= TIMEOUT_LENGTH and send_to_GPIO:
+        left_intensity = 0
+        middle_intensity = 0
+        right_intensity = 0
 
 # --- Main ---
 # Run Object Detection
