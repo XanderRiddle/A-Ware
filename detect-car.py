@@ -242,16 +242,19 @@ oak.visualize(nn.out.passthrough, fps=True).detections(thickness=2).text(auto_sc
 oak.start(blocking=False)
 
 while oak.running():
-    oak.poll()
     if send_to_GPIO: # Reset GPIO Duty Cycles
         left_intensity = 0
         middle_intensity = 0
         right_intensity = 0
 
+        oak.poll()
+
         left_pwm.ChangeDutyCycle(left_intensity)
         middle_pwm.ChangeDutyCycle(middle_intensity)
         right_pwm.ChangeDutyCycle(right_intensity)
         print("Left PWM:", left_intensity, "Middle PWM:", middle_intensity, "Right PWM:", right_intensity)
+    else:
+        oak.poll()
 
 oak.close()
 if send_to_GPIO:
