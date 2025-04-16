@@ -21,6 +21,8 @@ VEL_SMOOTHING = 0.2 # Smooths velocity readings, 1 = no smoothing
 
 # --- GPIO pins for PWM output ---
 if send_to_GPIO:
+    timeout = None
+
     LEFT_PWM_PIN = 18
     MIDDLE_PWM_PIN = 19
     RIGHT_PWM_PIN = 20
@@ -182,7 +184,7 @@ def depth_cb(pkt: DetectionPacket):
     update_tracks()
 
 def update_tracks():
-    global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity
+    global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity, timeout
     if detections is None or depth_frame is None:
         return
     dt = time.time() - last_time
@@ -225,6 +227,7 @@ def update_tracks():
                     middle_intensity = max(middle_intensity, intensity)
                 else:
                     right_intensity = max(right_intensity, intensity)
+                timeout = time.time()
 
     tracked = updated
 
@@ -243,9 +246,10 @@ oak.start(blocking=False)
 
 while oak.running():
     if send_to_GPIO: # Reset GPIO Duty Cycles
-        left_intensity = 0
-        middle_intensity = 0
-        right_intensity = 0
+        if timeout == 1:
+            left_intensity = 0
+            middle_intensity = 0
+            right_intensity = 0
 
         oak.poll()
 
