@@ -94,9 +94,9 @@ def decode(nn_data: NNData) -> Detections:
     dets = Detections(nn_data)
     filteredDets = Detections()
 
-    for det in np.array(nn_data.getFirstLayerFp16()).reshape((1, 1, -1, 7))[0][0]:
-        if det[2] > CONFIDENCE_THRESHOLD:
-            filteredDets.add(int(det[1]), det[2], det[3:])
+    for det in dets.detections:
+        if det.confidence > CONFIDENCE_THRESHOLD:
+            filteredDets.add(det.label, det.confidence, [det.xmin, det.ymin, det.xmax, det.ymax])
     return filteredDets
 
 def center(b):
