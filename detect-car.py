@@ -13,7 +13,7 @@ if send_to_GPIO:
     import RPi.GPIO as GPIO
 
 # --- Config ---
-CONFIDENCE_THRESHOLD = 0.5 # Required confidence for object detection
+CONFIDENCE_THRESHOLD = 0.95 # Required confidence for object detection
 MAX_MATCH_DIST = 0.3 # Maximum distance for a detection to be matched to an existing track
 MIN_NEW_OBJ_DIST = 0.2 # Minimum distance for a new detection to be separate from existing tracks
 POS_SMOOTHING = 0.2 # Smooths position readings, 1 = no smoothing
@@ -227,7 +227,6 @@ def update_tracks():
         cxy = center(bbox)
 
         pos = get_3d_pos(bbox, depth_frame, oc_x, oc_y, fl_x, fl_y)
-        print(pos)
         vel = (0, 0, 0)
 
         if pos == (0, 0, 0):
@@ -244,7 +243,7 @@ def update_tracks():
 
         updated[tid] = {'center': cxy, 'position': pos, 'velocity': vel}
 
-        print(f"ID {tid}: Pos=({pos[0]},{pos[1]},{pos[2]})m Vel=({vel[0]},{vel[1]},{vel[2]})m/s")
+        print(f"ID {tid}: Pos=({pos[0]:.2f},{pos[1]:.2f},{pos[2]:.2f})m Vel=({vel[0]:.1f},{vel[1]:.1f},{vel[2]:.1f})m/s")
 
         if send_to_GPIO and 0 <= cxy[0] <= width and 0 <= cxy[1] <= height:
             intensity = map_distance_to_pwm(pos[2])  # Map position to PWM intensity
@@ -289,7 +288,8 @@ while oak.running():
         left_pwm.ChangeDutyCycle(left_intensity)
         middle_pwm.ChangeDutyCycle(middle_intensity)
         right_pwm.ChangeDutyCycle(right_intensity)
-        # print("Left PWM:", left_intensity, "Middle PWM:", middle_intensity, "Right PWM:", right_intensity)
+        if left_intensity + middle_intensity + right_intensity > 0:
+            print("Left PWM:", left_intensity, "Middle PWM:", middle_intensity, "Right PWM:", right_intensity)
     else:
         oak.poll()
 
