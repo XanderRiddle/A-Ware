@@ -6,7 +6,7 @@ send_to_GPIO = True
 
 import numpy as np
 import time
-from depthai import NNData, CameraBoardSocket
+from depthai import NNData, CameraBoardSocket, ImgDetection
 from depthai_sdk import OakCamera
 from depthai_sdk.classes import Detections, DetectionPacket
 if send_to_GPIO:
@@ -91,10 +91,27 @@ def decode(nn_data: NNData) -> Detections:
     Reshapes data in lists of 7 values: image ID, class ID, confidence, xmin, ymin, xmax, ymax
     Returns a 'Detections' list of detections above the specified confidence threshold.
     """
+    # dets = Detections(nn_data)
+    # dets.detections = [d for d in dets.detections if d.confidence > CONFIDENCE_THRESHOLD]
+    # for d in dets.detections:
+    #     print(f"Detected: {d.label} with confidence {d.confidence:.2f}")
+    # return dets
+    results = np.array(nn_data.getFirstLayerFp16()).reshape((1, 1, -1, 7))
     dets = Detections(nn_data)
-    dets.detections = [d for d in dets.detections if d.confidence > CONFIDENCE_THRESHOLD]
-    for d in dets.detections:
-        print(f"Detected: {d.label} with confidence {d.confidence:.2f}")
+    for result in results[0][0]:
+        if result[2] > CONFIDENCE_THRESHOLD:
+            label = int(result[1])
+            conf = result[2]
+            bbox = result[3:]
+            det = ImgDetection()
+            det.confidence = conf
+            det.label = label
+            det.xmin = bbox[0]
+            det.ymin = bbox[1]
+            det.xmax = bbox[2]
+            det.ymax = bbox[3]
+            dets.detections.append(det)
+
     return dets
 
 def center(b):
@@ -245,7 +262,7 @@ stereo.config_stereo(align=color)
 oak.callback(nn.out.main, detection_cb)
 oak.callback(stereo.out.depth, depth_cb)
 
-oak.visualize(nn.out.main, fps=True).detections(thickness=2).text(auto_scale=True)
+oak.visualize(nn, fps=True).detections(thickness=2).text(auto_scale=True)
 oak.start(blocking=False)
 
 while oak.running():
