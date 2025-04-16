@@ -125,7 +125,7 @@ def get_3d_pos(bbox, depth, oc_x, oc_y, fl_x, fl_y):
     z = depth[cy, cx] / 1000.0 # Depth in meters
 
     if z == 0 or np.isnan(z) or np.isinf(z): # Invalid depth
-        return None
+        return (np.inf, np.inf, np.inf)
 
     x = (cx - oc_x) * z / fl_x
     y = (cy - oc_y) * z / fl_y
@@ -212,7 +212,7 @@ def update_tracks():
         pos = get_3d_pos(bbox, depth_frame, oc_x, oc_y, fl_x, fl_y)
         vel = (0, 0, 0)
         if old_data != {}:
-            if pos == None: # Current position failed, so use old one.
+            if np.isinf(pos[2]): # Current position failed, so use old one.
                 pos = old_data["position"]
             else: # Try to smooth out the position using old data.
                 pos = tuple(old_data["position"][i] + POS_SMOOTHING * (pos[i] - old_data["position"][i]) for i in range(3))
@@ -222,7 +222,7 @@ def update_tracks():
             else: # Try to smooth out the velocity using old one.
                 vel = tuple(old_data["velocity"][i] + VEL_SMOOTHING * (vel[i] - old_data["velocity"][i]) for i in range(3))
 
-        if pos != None and vel != None:
+        if not np.isinf(pos[2]) and vel != None:
             updated[tid] = {'center': cxy, 'position': pos, 'velocity': vel}
             print(f"ID {tid}: Pos=({pos[0]:.2f},{pos[1]:.2f},{pos[2]:.2f})m Vel=({vel[0]:.1f},{vel[1]:.1f},{vel[2]:.1f})m/s")
 
