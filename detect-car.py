@@ -182,7 +182,7 @@ def match_tracks(dets, tracks):
 # --- Callbacks ---
 def detection_cb(pkt: DetectionPacket):
     global detections
-    detections = decode(pkt.nndata)
+    detections = decode(pkt.nnData)
     update_tracks()
 
 def depth_cb(pkt: DetectionPacket):
@@ -242,7 +242,7 @@ def update_tracks():
 # Run Object Detection
 color = oak.create_camera("color", str(width) + "p")
 stereo = oak.create_stereo("800p")
-nn = oak.create_nn("vehicle-detection-0202", color, decode_fn=decode)
+nn = oak.create_nn("vehicle-detection-0202", color, decode_fn=None)
 stereo.config_stereo(align=color)
 
 oak.callback(nn.out, detection_cb)
