@@ -222,7 +222,7 @@ def update_tracks():
     # Process each matched track
     for tid, didx in matches.items():
         det = detections[didx]
-        oldCxy, oldPos, oldVel = tracked.get(tid, {'center': (0, 0, 0), 'position': (0, 0, 0), 'velocity': (0, 0, 0)})
+        oldCxy, oldPos, oldVel = tracked.get(tid, {'center': (0.0, 0.0, 0.0), 'position': (0.0, 0.0, 0.0), 'velocity': (0.0, 0.0, 0.0)})
         bbox = [det.xmin, det.ymin, det.xmax, det.ymax]
         cxy = center(bbox)
 
@@ -230,11 +230,10 @@ def update_tracks():
         vel = (0, 0, 0)
 
         if pos is None:
-            if oldPos == (0, 0, 0):
+            if oldPos == (0, 0, 0) or oldPos == None:
                 print(f"Skipping track ID {tid} due to invalid position and no old data.")
                 continue
             pos = oldPos # Use the old position if no new position found
-            vel = oldVel # Use the old velocity if no new velocity found
         else:
             # Apply smoothing for position and velocity
             pos = tuple(oldPos[i] + POS_SMOOTHING * (pos[i] - oldPos[i]) for i in range(3))
@@ -242,7 +241,7 @@ def update_tracks():
 
         updated[tid] = {'center': cxy, 'position': pos, 'velocity': vel}
 
-        print(f"ID {tid}: Pos=({pos[0]:.2f},{pos[1]:.2f},{pos[2]:.2f})m Vel=({vel[0]:.1f},{vel[1]:.1f},{vel[2]:.1f})m/s")
+        print(f"ID {tid}: Pos=({pos[0]},{pos[1]},{pos[2]})m Vel=({vel[0]},{vel[1]},{vel[2]})m/s")
 
         if send_to_GPIO and 0 <= cxy[0] <= width and 0 <= cxy[1] <= height:
             intensity = map_distance_to_pwm(pos[2])  # Map position to PWM intensity
