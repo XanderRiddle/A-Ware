@@ -140,7 +140,7 @@ def get_3d_pos(bbox, depth, oc_x, oc_y, fl_x, fl_y):
     z = depth[cy, cx] / 1000.0 # Depth in meters
 
     if z == 0 or np.isnan(z) or np.isinf(z): # Invalid depth
-        return (np.inf, np.inf, np.inf)
+        return None
 
     x = (cx - oc_x) * z / fl_x
     y = (cy - oc_y) * z / fl_y
@@ -217,7 +217,6 @@ def update_tracks():
     matches = match_tracks(detections, tracked)
     updated = {}
     for tid, didx in matches.items():
-        print(str(didx))
         det = detections[didx]
         old_data = tracked.get(tid, {})
         bbox = [det.xmin, det.ymin, det.xmax, det.ymax]
@@ -225,30 +224,27 @@ def update_tracks():
 
         pos = get_3d_pos(bbox, depth_frame, oc_x, oc_y, fl_x, fl_y)
         vel = (0, 0, 0)
-        if old_data != {}:
-            if np.isinf(pos[2]): # Current position failed, so use old one.
-                pos = old_data["position"]
-            else: # Try to smooth out the position using old data.
-                pos = tuple(old_data["position"][i] + POS_SMOOTHING * (pos[i] - old_data["position"][i]) for i in range(3))
-            vel = velocity(old_data["position"], pos, dt)
-            if vel == None: # Current velocity failed, so use old one.
-                vel = old_data["velocity"]
-            else: # Try to smooth out the velocity using old one.
-                vel = tuple(old_data["velocity"][i] + VEL_SMOOTHING * (vel[i] - old_data["velocity"][i]) for i in range(3))
+        if pos == None and old_data == {}:
+            print("Issue with determining position.")
+            continue
+        elif pos == None: # Current position/velocity failed, so use old ones.
+            pos = old_data["position"]
+            vel = old_data["velocity"]
+        else: # Try to smooth out the position/velocity using old data.
+            pos = tuple(old_data["position"][i] + POS_SMOOTHING * (pos[i] - old_data["position"][i]) for i in range(3))
+            vel = tuple(old_data["velocity"][i] + VEL_SMOOTHING * (vel[i] - old_data["velocity"][i]) for i in range(3))
+        updated[tid] = {'center': cxy, 'position': pos, 'velocity': vel}
+        print(f"ID {tid}: Pos=({pos[0]:.2f},{pos[1]:.2f},{pos[2]:.2f})m Vel=({vel[0]:.1f},{vel[1]:.1f},{vel[2]:.1f})m/s")
 
-        if not np.isinf(pos[2]) and vel != None:
-            updated[tid] = {'center': cxy, 'position': pos, 'velocity': vel}
-            print(f"ID {tid}: Pos=({pos[0]:.2f},{pos[1]:.2f},{pos[2]:.2f})m Vel=({vel[0]:.1f},{vel[1]:.1f},{vel[2]:.1f})m/s")
-
-            if send_to_GPIO and 0 <= cxy[0] <= width and 0 <= cxy[1] <= height:
-                intensity = map_distance_to_pwm(pos[2])
-                if cxy[0] < width / 3:
-                    left_intensity = max(left_intensity, intensity)
-                elif cxy[0] < 2 * width / 3:
-                    middle_intensity = max(middle_intensity, intensity)
-                else:
-                    right_intensity = max(right_intensity, intensity)
-                timeout = time.time()
+        if send_to_GPIO and 0 <= cxy[0] <= width and 0 <= cxy[1] <= height:
+            intensity = map_distance_to_pwm(pos[2])
+            if cxy[0] < width / 3:
+                left_intensity = max(left_intensity, intensity)
+            elif cxy[0] < 2 * width / 3:
+                middle_intensity = max(middle_intensity, intensity)
+            else:
+                right_intensity = max(right_intensity, intensity)
+            timeout = time.time()
 
     tracked = updated
 
