@@ -224,7 +224,7 @@ def update_tracks():
         det = detections[didx]
         oldCxy, oldPos, oldVel = tracked.get(tid, {'center': (0, 0, 0), 'position': (0, 0, 0), 'velocity': (0, 0, 0)}).values()
         bbox = [det.xmin, det.ymin, det.xmax, det.ymax]
-        cxy = center(bbox)
+        cxy = center(bbox) # Decimal center
 
         pos = get_3d_pos(bbox, depth_frame, oc_x, oc_y, fl_x, fl_y)
         vel = (0, 0, 0)
@@ -247,10 +247,9 @@ def update_tracks():
 
         if send_to_GPIO and 0 <= cxy[0] <= width and 0 <= cxy[1] <= height:
             intensity = map_distance_to_pwm(pos[2])  # Map position to PWM intensity
-            print(cxy)
-            if cxy[0] < width / 3:
+            if cxy[0] < 1 / 3:
                 left_intensity = max(left_intensity, intensity)
-            elif cxy[0] < 2 * width / 3:
+            elif cxy[0] < 2  / 3:
                 middle_intensity = max(middle_intensity, intensity)
             else:
                 right_intensity = max(right_intensity, intensity)
