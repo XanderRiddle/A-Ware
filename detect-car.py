@@ -210,35 +210,35 @@ def update_tracks():
 
     if not detections or depth_frame is None:
         print("No detections or depth frame available.")
-        tracked.clear()  # Clear the tracked objects if detections are empty
+        tracked.clear() # Clear the tracked objects if detections are empty
         return
 
-    dt = time.time() - last_time  # Calculate delta time (time elapsed)
-    last_time = time.time()  # Update the last time for the next cycle
+    dt = time.time() - last_time
+    last_time = time.time()
 
-    matches = match_tracks(detections, tracked)  # Get the matches between detections and tracked objects
-    updated = {}  # Dictionary to store updated tracked objects
+    matches = match_tracks(detections, tracked)
+    updated = {} # Dictionary to store updated tracked objects
 
     # Process each matched track
     for tid, didx in matches.items():
-        det = detections[didx]  # Get the detection corresponding to the track ID
-        old_data = tracked.get(tid, {})  # Get existing track data or empty if new
-        bbox = [det.xmin, det.ymin, det.xmax, det.ymax]  # Bounding box
-        cxy = center(bbox)  # Calculate the center of the bounding box
+        det = detections[didx]
+        oldCxy, oldPos, oldVel = tracked.get(tid, {'center': (0, 0, 0), 'position': (0, 0, 0), 'velocity': (0, 0, 0)})
+        bbox = [det.xmin, det.ymin, det.xmax, det.ymax]
+        cxy = center(bbox)
 
-        pos = get_3d_pos(bbox, depth_frame, oc_x, oc_y, fl_x, fl_y)  # Calculate 3D position
-        vel = (0, 0, 0)  # Default velocity
+        pos = get_3d_pos(bbox, depth_frame, oc_x, oc_y, fl_x, fl_y)
+        vel = (0, 0, 0)
 
-        if pos is None:  # If position is invalid
-            if not old_data:
+        if pos is None:
+            if oldPos == (0, 0, 0):
                 print(f"Skipping track ID {tid} due to invalid position and no old data.")
                 continue
-            pos = old_data["position"]  # Use the old position if no new position found
-            vel = old_data["velocity"]  # Use the old velocity if no new velocity found
+            pos = oldPos # Use the old position if no new position found
+            vel = oldVel # Use the old velocity if no new velocity found
         else:
             # Apply smoothing for position and velocity
-            pos = tuple(old_data["position"][i] + POS_SMOOTHING * (pos[i] - old_data["position"][i]) for i in range(3))
-            vel = tuple(old_data["velocity"][i] + VEL_SMOOTHING * (vel[i] - old_data["velocity"][i]) for i in range(3))
+            pos = tuple(oldPos[i] + POS_SMOOTHING * (pos[i] - oldPos[i]) for i in range(3))
+            vel = tuple(oldVel[i] + VEL_SMOOTHING * (vel[i] - oldVel[i]) for i in range(3))
 
         updated[tid] = {'center': cxy, 'position': pos, 'velocity': vel}
 
@@ -246,7 +246,6 @@ def update_tracks():
 
         if send_to_GPIO and 0 <= cxy[0] <= width and 0 <= cxy[1] <= height:
             intensity = map_distance_to_pwm(pos[2])  # Map position to PWM intensity
-            # Determine the PWM pin based on object position
             if cxy[0] < width / 3:
                 left_intensity = max(left_intensity, intensity)
             elif cxy[0] < 2 * width / 3:
@@ -255,7 +254,6 @@ def update_tracks():
                 right_intensity = max(right_intensity, intensity)
             timeout = time.time()  # Reset the timeout counter
 
-    # Update tracked objects with the new data
     tracked.update(updated)
 
     # If no new detections were found (timeout), reset PWM intensities
