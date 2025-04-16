@@ -258,7 +258,7 @@ stereo.config_stereo(align=color)
 oak.callback(nn.out.main, detection_cb)
 oak.callback(stereo.out.depth, depth_cb)
 
-oak.visualize(nn, fps=True).detections(thickness=2).text(auto_scale=True)
+# oak.visualize(nn, fps=True).detections(thickness=2).text(auto_scale=True)
 oak.start(blocking=False)
 
 while oak.running():
