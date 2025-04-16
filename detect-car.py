@@ -183,12 +183,6 @@ def depth_cb(pkt: DetectionPacket):
 
 def update_tracks():
     global detections, depth_frame, tracked, last_time
-
-    if send_to_GPIO: # Reset GPIO Duty Cycles
-        left_intensity = 0
-        middle_intensity = 0
-        right_intensity = 0
-
     if detections is None or depth_frame is None:
         return
     dt = time.time() - last_time
@@ -231,11 +225,6 @@ def update_tracks():
                     middle_intensity = max(middle_intensity, intensity)
                 else:
                     right_intensity = max(right_intensity, intensity)
-                
-    left_pwm.ChangeDutyCycle(left_intensity)
-    middle_pwm.ChangeDutyCycle(middle_intensity)
-    right_pwm.ChangeDutyCycle(right_intensity)
-    print("Left PWM:", left_intensity, "Middle PWM:", middle_intensity, "Right PWM:", right_intensity)
 
     tracked = updated
 
@@ -250,7 +239,18 @@ oak.callback(nn.out.passthrough, detection_cb)
 oak.callback(stereo.out.depth, depth_cb)
 
 oak.visualize(nn.out.passthrough, fps=True).detections(thickness=2).text(auto_scale=True)
-oak.start(blocking=True)
+oak.start(blocking=False)
+
+while True:
+    if send_to_GPIO: # Reset GPIO Duty Cycles
+        left_intensity = 0
+        middle_intensity = 0
+        right_intensity = 0
+
+        left_pwm.ChangeDutyCycle(left_intensity)
+        middle_pwm.ChangeDutyCycle(middle_intensity)
+        right_pwm.ChangeDutyCycle(right_intensity)
+        print("Left PWM:", left_intensity, "Middle PWM:", middle_intensity, "Right PWM:", right_intensity)
 
 oak.close()
 if send_to_GPIO:
