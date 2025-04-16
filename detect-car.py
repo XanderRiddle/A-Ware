@@ -140,7 +140,7 @@ def get_3d_pos(bbox, depth, oc_x, oc_y, fl_x, fl_y):
     z = depth[cy, cx] / 1000.0 # Depth in meters
 
     if z == 0 or np.isnan(z) or np.isinf(z): # Invalid depth
-        return None
+        return (0, 0, 0)
 
     x = (cx - oc_x) * z / fl_x
     y = (cy - oc_y) * z / fl_y
@@ -222,14 +222,14 @@ def update_tracks():
     # Process each matched track
     for tid, didx in matches.items():
         det = detections[didx]
-        oldCxy, oldPos, oldVel = tracked.get(tid, {'center': (0.0, 0.0, 0.0), 'position': (0.0, 0.0, 0.0), 'velocity': (0.0, 0.0, 0.0)})
+        oldCxy, oldPos, oldVel = tracked.get(tid, {'center': (0, 0, 0), 'position': (0, 0, 0), 'velocity': (0, 0, 0)})
         bbox = [det.xmin, det.ymin, det.xmax, det.ymax]
         cxy = center(bbox)
 
         pos = get_3d_pos(bbox, depth_frame, oc_x, oc_y, fl_x, fl_y)
         vel = (0, 0, 0)
 
-        if pos is None:
+        if pos == (0, 0, 0):
             if oldPos == (0, 0, 0) or oldPos == None:
                 print(f"Skipping track ID {tid} due to invalid position and no old data.")
                 continue
