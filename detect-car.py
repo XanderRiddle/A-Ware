@@ -172,7 +172,7 @@ def match_tracks(dets, tracks):
     used_dets = []
 
     track_centers = np.array([track['center'] for track in tracks.values()])
-    det_centers = np.array([center([d.xmin, d.ymin, d.xmax, d.ymax]) for d in dets.detections])
+    det_centers = np.array([center([d.xmin, d.ymin, d.xmax, d.ymax]) for d in dets])
 
     if len(track_centers) > 0 and len(det_centers) > 0:
         dists = np.linalg.norm(track_centers[:, None, :] - det_centers[None, :, :], axis = 2) # ndarray (tracks, dets)
