@@ -227,14 +227,17 @@ def update_tracks():
         cxy = center(bbox)
 
         pos = get_3d_pos(bbox, depth_frame, oc_x, oc_y, fl_x, fl_y)
+        print(pos)
         vel = (0, 0, 0)
 
         if pos == (0, 0, 0):
             if oldPos == (0, 0, 0) or oldPos == None:
                 print(f"Skipping track ID {tid} due to invalid position and no old data.")
                 continue
-            pos = oldPos # Use the old position if no new position found
+            elif type(oldPos) == tuple:
+                pos = oldPos # Use the old position if no new position found
         else:
+            vel = velocity(oldPos, pos, dt)
             # Apply smoothing for position and velocity
             pos = tuple(oldPos[i] + POS_SMOOTHING * (pos[i] - oldPos[i]) for i in range(3))
             vel = tuple(oldVel[i] + VEL_SMOOTHING * (vel[i] - oldVel[i]) for i in range(3))
@@ -253,7 +256,7 @@ def update_tracks():
                 right_intensity = max(right_intensity, intensity)
             timeout = time.time()  # Reset the timeout counter
 
-    tracked.update(updated)
+    tracked = updated
 
     # If no new detections were found (timeout), reset PWM intensities
     if time.time() - timeout >= TIMEOUT_LENGTH and send_to_GPIO:
