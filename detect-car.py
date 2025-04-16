@@ -92,13 +92,10 @@ def decode(nn_data: NNData) -> Detections:
     Returns a 'Detections' list of detections above the specified confidence threshold.
     """
     dets = Detections(nn_data)
-    filteredDets = Detections(NNData())
-
-    for det in dets.detections:
-        print(f"Detected: {det.label} with confidence {det.confidence:.2f}")
-        if det.confidence > CONFIDENCE_THRESHOLD:
-            filteredDets.add(det.label, det.confidence, [det.xmin, det.ymin, det.xmax, det.ymax])
-    return filteredDets
+    dets.detections = [d for d in dets.detections if d.confidence > CONFIDENCE_THRESHOLD]
+    for d in dets.detections:
+        print(f"Detected: {d.label} with confidence {d.confidence:.2f}")
+    return dets
 
 def center(b):
     """
@@ -183,7 +180,7 @@ def match_tracks(dets, tracks):
 # --- Callbacks ---
 def detection_cb(pkt: DetectionPacket):
     global detections
-    detections = pkt.detections
+    detections = pkt.img_detections
     update_tracks()
 
 def depth_cb(pkt: DetectionPacket):
@@ -194,6 +191,7 @@ def depth_cb(pkt: DetectionPacket):
 def update_tracks():
     global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity, timeout
     if detections is None or len(detections) == 0 or depth_frame is None:
+        print("Detections or depth frame is empty.")
         tracked.clear()
         return
     dt = time.time() - last_time
