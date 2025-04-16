@@ -2,7 +2,7 @@
 # A-Ware
 # 4-14-25
 
-send_to_GPIO = False
+send_to_GPIO = True
 
 import numpy as np
 import time
