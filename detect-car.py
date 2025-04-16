@@ -13,7 +13,7 @@ if send_to_GPIO:
     import RPi.GPIO as GPIO
 
 # --- Config ---
-CONFIDENCE_THRESHOLD = 0.96 # Required confidence for object detection
+CONFIDENCE_THRESHOLD = 0.5 # Required confidence for object detection
 MAX_MATCH_DIST = 0.3 # Maximum distance for a detection to be matched to an existing track
 MIN_NEW_OBJ_DIST = 0.2 # Minimum distance for a new detection to be separate from existing tracks
 POS_SMOOTHING = 0.2 # Smooths position readings, 1 = no smoothing
@@ -193,8 +193,7 @@ def depth_cb(pkt: DetectionPacket):
 
 def update_tracks():
     global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity, timeout
-    if detections is None or depth_frame is None:
-        print("return 1")
+    if detections is None or len(detections.detections) == 0 or depth_frame is None:
         return
     dt = time.time() - last_time
     last_time = time.time()
