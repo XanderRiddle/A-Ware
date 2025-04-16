@@ -208,7 +208,7 @@ def depth_cb(pkt: DetectionPacket):
     update_tracks()
 
 def update_tracks():
-    global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity, left_timeout
+    global detections, depth_frame, tracked, last_time, left_intensity, middle_intensity, right_intensity, left_timeout, middle_timeout, right_timeout
 
     if not detections or depth_frame is None:
         print("No detections or depth frame available.")
