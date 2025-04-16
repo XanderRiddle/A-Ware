@@ -251,7 +251,7 @@ oak.start(blocking=False)
 
 while oak.running():
     if send_to_GPIO: # Reset GPIO Duty Cycles
-        if timeout >= 1:
+        if time.time() - timeout >= 1:
             left_intensity = 0
             middle_intensity = 0
             right_intensity = 0
