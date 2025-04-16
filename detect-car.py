@@ -183,7 +183,7 @@ def match_tracks(dets, tracks):
 # --- Callbacks ---
 def detection_cb(pkt: DetectionPacket):
     global detections
-    detections = decode(pkt.)
+    detections = decode(pkt.detections)
     update_tracks()
 
 def depth_cb(pkt: DetectionPacket):
