@@ -95,6 +95,7 @@ def decode(nn_data: NNData) -> Detections:
     filteredDets = Detections(NNData())
 
     for det in dets.detections:
+        print(f"Detected: {det.label} with confidence {det.confidence:.2f}")
         if det.confidence > CONFIDENCE_THRESHOLD:
             filteredDets.add(det.label, det.confidence, [det.xmin, det.ymin, det.xmax, det.ymax])
     return filteredDets
@@ -182,7 +183,7 @@ def match_tracks(dets, tracks):
 # --- Callbacks ---
 def detection_cb(pkt: DetectionPacket):
     global detections
-    detections = decode(pkt.detections)
+    detections = decode(pkt.)
     update_tracks()
 
 def depth_cb(pkt: DetectionPacket):
