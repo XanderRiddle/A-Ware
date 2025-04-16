@@ -232,10 +232,10 @@ def update_tracks():
                 else:
                     right_intensity = max(right_intensity, intensity)
                 
-                left_pwm.ChangeDutyCycle(left_intensity)
-                middle_pwm.ChangeDutyCycle(middle_intensity)
-                right_pwm.ChangeDutyCycle(right_intensity)
-                print("Left PWM:", left_intensity, "Middle PWM:", middle_intensity, "Right PWM:", right_intensity)
+    left_pwm.ChangeDutyCycle(left_intensity)
+    middle_pwm.ChangeDutyCycle(middle_intensity)
+    right_pwm.ChangeDutyCycle(right_intensity)
+    print("Left PWM:", left_intensity, "Middle PWM:", middle_intensity, "Right PWM:", right_intensity)
 
     tracked = updated
 
