@@ -21,7 +21,7 @@ VEL_SMOOTHING = 0.2 # Smooths velocity readings, 1 = no smoothing
 
 # --- GPIO pins for PWM output ---
 if send_to_GPIO:
-    timeout = None
+    timeout = 0
 
     LEFT_PWM_PIN = 18
     MIDDLE_PWM_PIN = 19
